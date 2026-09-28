@@ -1,21 +1,12 @@
 import { generateId } from "../../services/roomServices.js";
 import repo from "../../repositories/roomsRepo.js";
 import { Server, Socket } from "socket.io";
+import { asyncHandler } from "./utils.js";
 
 export const createRoomHandler = (
     /**@type {Server} */ io,
     /**@type {Socket} */ socket,
 ) => {
-    const asyncHandler = (handler) => async (payload, cb) => {
-        try {
-            await handler(payload, cb);
-        } catch ({ message }) {
-            return cb({
-                success: false,
-                error: message,
-            });
-        }
-    };
     const handleCreateRoom = ({ name }, callback) => {
         const { roomCode, id: socketId } = socket;
         if (!name && name.length > 20)
@@ -47,7 +38,6 @@ export const createRoomHandler = (
         if (!name && name.length > 20)
             throw new Error("Name is missing or too long");
         if (oldRoomCode) throw new Error("You already in room");
-
         const room = repo.getById(roomCode);
         if (!room) throw new Error("Room code is missing or invalid");
         const { players, ownerSocketId } = room;
