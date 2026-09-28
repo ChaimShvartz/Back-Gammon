@@ -1,5 +1,5 @@
-import { generateId } from "./services/roomServices.js";
-import repo from "./repositories/roomsRepo.js";
+import { generateId } from "../../services/roomServices.js";
+import repo from "../../repositories/roomsRepo.js";
 import { Server, Socket } from "socket.io";
 
 export const createRoomHandler = (
@@ -33,37 +33,40 @@ export const createRoomHandler = (
             game: null,
             rematchAcceptedBy: [],
         };
+
         repo.addRoom(id, room);
         callback({
             success: true,
+            name,
             code: id,
         });
     };
 
     const handleJoinRoom = ({ name, roomCode }, callback) => {
-        const { roomCode, id: socketId } = socket;
+        const { roomCode: oldRoomCode, id: socketId } = socket;
         if (!name && name.length > 20)
             throw new Error("Name is missing or too long");
-        if (roomCode) throw new Error("You already in room");
+        if (oldRoomCode) throw new Error("You already in room");
 
         const room = repo.getById(roomCode);
         if (!room) throw new Error("Room code is missing or invalid");
+        const { players, ownerSocketId } = room;
+        if (players.length > 1) throw new Error("The room is full");
 
         socket.join(roomCode);
         socket.roomCode = roomCode;
-        room.players.push({ socketId, name, color: "black" });
+        players.push({ socketId, name, color: "black" });
         callback({
             success: true,
-            room: { name, color: "black" },
-        });
-        const { players, ownerSocketId } = room;
-        io.to(roomCode).emit("room:state", {
-            roomCode,
-            players: players.map(({ name, color, socketId }) => ({
+            code: roomCode,
+            players: players.map(({ name, color }) => ({
                 name,
                 color,
-                isManager: socketId === ownerSocketId,
             })),
+        });
+        socket.to(roomCode).emit("room:state", {
+            name,
+            color: "black",
         });
     };
 
