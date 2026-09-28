@@ -1,21 +1,28 @@
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useGameStore } from "../store/UseGameStore";
 import { useEffect } from "react";
 import { socket } from "../services/socket";
 import UseGameSocket from "../hooks/UseGameSocket";
 
 const WaitingRoomPage = () => {
+    const navigate = useNavigate();
     const { roomCode } = useParams();
     const players = useGameStore((state) => state.players);
     const addPlayer = useGameStore((state) => state.addPlayer);
     const managerSocketId = useGameStore((state) => state.managerSocketId);
+    const setGame = useGameStore((state) => state.setGame);
     const { startGame } = UseGameSocket();
 
+    const navigateToGamePage = () => navigate("/game");
     const isCreator = socket.id === managerSocketId;
     useEffect(() => {
         socket.on("room:state", addPlayer);
+        socket.on("game:state", setGame);
+        socket.on("game:state", navigateToGamePage);
         return () => {
             socket.off("room:state", addPlayer);
+            socket.off("game:state", setGame);
+            socket.off("game:state", navigateToGamePage);
         };
     }, []);
 

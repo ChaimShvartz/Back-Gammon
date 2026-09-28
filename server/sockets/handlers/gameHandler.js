@@ -23,7 +23,7 @@ export const createGameHandler = (
         const initialGame = getInitialGame();
         const { beginner, dice } = getBeginnerTurn();
 
-        const game = repo.updateRoom({
+        const {game} = repo.updateRoom({
             status: "playing",
             game: {
                 ...initialGame,
@@ -33,8 +33,9 @@ export const createGameHandler = (
                 status: "waiting-for-move",
             },
         });
+        const {status: _status, ...rest} = game
 
-        io.to(roomCode).emit("game:state", game);
+        io.to(roomCode).emit("game:state", {...rest});
     };
     socket.on("game:start", asyncHandler(handleStartGame));
 };
